@@ -1,0 +1,122 @@
+/**
+ * Design tokens — single source of truth for color, type, spacing,
+ * radius, shadow, and motion. Consumed by src/app/globals.css via
+ * Tailwind v4's `@theme inline`, and can be read directly in CSS
+ * anywhere via var(--token-name).
+ *
+ * Breakpoints intentionally use Tailwind v4's built-in defaults
+ * (sm 40rem / md 48rem / lg 64rem / xl 80rem / 2xl 96rem) rather than
+ * redefining them — listed here only as reference.
+ * sm: 640px  md: 768px  lg: 1024px  xl: 1280px  2xl: 1536px
+ */
+
+:root {
+  /* ---- Color: neutral scale (zinc) ---- */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-600: #52525b;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* ---- Color: accent (indigo) ---- */
+  --color-indigo-400: #818cf8;
+  --color-indigo-500: #6366f1;
+  --color-indigo-600: #4f46e5;
+
+  /* ---- Color: semantic tokens (light mode default) ---- */
+  --background: var(--color-zinc-50);
+  --background-subtle: var(--color-zinc-100);
+  --foreground: var(--color-zinc-950);
+  --foreground-muted: var(--color-zinc-600);
+  --border: var(--color-zinc-200);
+  --accent: var(--color-indigo-600);
+  --accent-hover: var(--color-indigo-500);
+  --accent-foreground: #ffffff;
+
+  /* ---- Typography: font families (populated by next/font in layout.tsx) ---- */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* ---- Typography: modular scale (ratio 1.25), each paired with a line-height ---- */
+  --text-xs: 0.75rem;
+  --leading-xs: 1rem;
+  --text-sm: 0.875rem;
+  --leading-sm: 1.25rem;
+  --text-base: 1rem;
+  --leading-base: 1.5rem;
+  --text-lg: 1.25rem;
+  --leading-lg: 1.75rem;
+  --text-xl: 1.5rem;
+  --leading-xl: 2rem;
+  --text-2xl: 1.875rem;
+  --leading-2xl: 2.25rem;
+  --text-3xl: 2.25rem;
+  --leading-3xl: 2.5rem;
+  --text-4xl: 3rem;
+  --leading-4xl: 3.25rem;
+  --text-5xl: 3.75rem;
+  --leading-5xl: 1;
+  --text-6xl: 4.5rem;
+  --leading-6xl: 1;
+
+  /* ---- Spacing: semantic layout tokens (on top of Tailwind's default scale) ---- */
+  --space-container-x: 1.5rem;
+  --space-section-y: 6rem;
+
+  /* ---- Radius ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ---- Shadow (tuned for dark-first UI: soft, low-opacity) ---- */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.35);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.45);
+
+  /* ---- Motion ---- */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---- Color: semantic tokens (dark mode) ----
+ * Class-based strategy so a future theme toggle can control it;
+ * defaults to dark via prefers-color-scheme until a toggle exists.
+ */
+.dark {
+  --background: var(--color-zinc-950);
+  --background-subtle: var(--color-zinc-900);
+  --foreground: var(--color-zinc-50);
+  --foreground-muted: var(--color-zinc-400);
+  --border: var(--color-zinc-800);
+  --accent: var(--color-indigo-500);
+  --accent-hover: var(--color-indigo-400);
+  --accent-foreground: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: var(--color-zinc-950);
+    --background-subtle: var(--color-zinc-900);
+    --foreground: var(--color-zinc-50);
+    --foreground-muted: var(--color-zinc-400);
+    --border: var(--color-zinc-800);
+    --accent: var(--color-indigo-500);
+    --accent-hover: var(--color-indigo-400);
+    --accent-foreground: #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0.01ms;
+    --duration-base: 0.01ms;
+    --duration-slow: 0.01ms;
+  }
+}
