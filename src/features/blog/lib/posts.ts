@@ -10,6 +10,12 @@ import { blogFrontmatterSchema, type BlogFrontmatter } from "@/lib/validations/b
 
 const BLOG_DIR = path.join(process.cwd(), "content/blog");
 
+// Slugs come straight from the [slug] route param and get joined into a
+// filesystem path below — reject anything but a plain filename-safe slug
+// before that join, so a crafted param (e.g. "../../../etc/hosts") can't
+// walk the lookup outside BLOG_DIR.
+const SAFE_SLUG_PATTERN = /^[a-zA-Z0-9-]+$/;
+
 export interface BlogPostSummary extends BlogFrontmatter {
   readonly slug: string;
   readonly readingTime: string;
@@ -49,6 +55,8 @@ export function getAllPosts(): BlogPostSummary[] {
 }
 
 export async function getPostBySlug(slug: string): Promise<BlogPost | undefined> {
+  if (!SAFE_SLUG_PATTERN.test(slug)) return undefined;
+
   const filePath = path.join(BLOG_DIR, `${slug}.mdx`);
   if (!fs.existsSync(filePath)) return undefined;
 
