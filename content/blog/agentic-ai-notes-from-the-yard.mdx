@@ -1,0 +1,58 @@
+---
+title: "Agentic AI: Notes from the Yard"
+description: "A CS concentrator's field notes on what changes when you stop prompting a model and start delegating to it — planning loops, tool use, memory, and why autonomy is a spectrum, not a switch."
+date: 2026-08-09
+tags: ["agentic-ai", "llm", "ai-agents"]
+published: true
+---
+
+Section starts at 9am in Sever Hall, and half the room is still arguing about whether "agentic AI" is a real technical category or just this year's word for "chatbot with a for-loop." I've spent the summer building on top of tool-using LLMs for a lab project, and I've landed somewhere in between: the term is overused, but the shift it points at is real.
+
+## The one-line version
+
+A chatbot answers. An agent *acts, observes, and acts again* — without a human re-typing the next instruction each time. That loop is the whole story. Everything else — planning, memory, tool use, multi-agent orchestration — is scaffolding around that loop.
+
+## What actually changed
+
+Prompting a model once is a request-response pair. You write, it replies, you read. Agentic systems replace that with a cycle:
+
+1. **Observe** — read the current state (a file, an API response, a user message).
+2. **Plan** — decide the next action given a goal.
+3. **Act** — call a tool: run code, hit an API, edit a file.
+4. **Observe again** — see what the action actually did, which might not match what you expected.
+
+The interesting failures live in step 4. Models are decent at step 2 in isolation; they're much shakier at noticing when step 3 didn't go as planned and adjusting instead of confabulating success. Most of the "agent frameworks" arms race is really just different opinions about how to keep that loop honest.
+
+## Tools are the actual unlock, not the "agency"
+
+It's tempting to talk about agentic AI in terms of autonomy and intent, like the model wants something. It's more useful to think about it as **function calling with a retry budget**. The model proposes a structured call, your code executes it against the real world, and the result gets fed back as context. Strip away the anthropomorphizing and an agent is:
+
+```
+while not done:
+    action = model.decide(context, tools)
+    result = execute(action)
+    context = context + result
+```
+
+That's it. The sophistication is entirely in what `tools` contains, how `execute` handles failure, and how aggressively `context` gets pruned so the loop doesn't drown in its own history. A section-mate building a research agent found that trimming stale tool outputs mattered more for task success than which model she used — an unglamorous but very real lesson.
+
+## Memory is a systems problem wearing an AI costume
+
+Long-running agents need to remember things across steps, sessions, or days. The naive answer — "just put it all in context" — breaks down fast: context windows are finite, and stuffing them with irrelevant history degrades reasoning even when it technically fits. So teams end up reinventing very old ideas: write-ahead logs, summarization passes, retrieval indices, TTLs on stale facts. None of it is new computer science. What's new is that the thing reading and writing that memory is a language model instead of a deterministic program, which means memory retrieval failures look like *judgment* failures — the agent doesn't say "cache miss," it just confidently does the wrong thing.
+
+## Autonomy is a dial, not a switch
+
+The most useful framing I picked up this summer, from a TA who'd shipped agent products before grad school: autonomy isn't binary, it's a spectrum defined by **how much the agent can do before a human has to look at it**.
+
+- Suggest only (human executes every action)
+- Execute reversible actions freely, ask before irreversible ones
+- Execute everything, human reviews after the fact
+- Fully unsupervised
+
+Almost every real deployment sits somewhere in the middle of that list, and the engineering work is mostly about drawing the line correctly — which actions are cheap to undo, which aren't, and building the system so it *knows the difference* rather than treating a file edit and a production deploy with the same confidence.
+
+## What I'd tell my past self
+
+Six months ago I thought agentic AI was about better prompts. It's not — it's a control-loop and systems-design problem that happens to have a language model as one component. The model quality matters less than I expected; the design of the tools, the feedback signal, and the boundaries on autonomous action matter more. That's a less flashy conclusion than the demos suggest, but it's the one that's held up against actual usage.
+
+Back to problem sets.
