@@ -1,0 +1,50 @@
+---
+title: "RAG, Demystified: Why Retrieval Still Beats a Bigger Context Window"
+description: "A practical walkthrough of retrieval-augmented generation — how it works, why it exists even as context windows grow, and the failure modes that actually matter in production."
+date: 2026-08-10
+tags: ["rag", "llm", "embeddings", "search"]
+published: true
+---
+
+Every few months someone declares RAG dead because context windows got bigger. Then a team ships a "just stuff everything in context" system, watches it hallucinate against its own source documents, and quietly reaches for a retriever again. RAG isn't a workaround for small context windows — it's a workaround for the fact that models don't reliably know *which* of the things they've seen actually matter.
+
+## The problem RAG solves
+
+A language model's knowledge is frozen at training time and diffused across its weights — it can't cite where a fact came from, can't be updated by editing a database row, and will confidently answer questions about things it was never told. Retrieval-augmented generation fixes this by separating two jobs that a base model conflates:
+
+- **Knowing things** — handled by an external, inspectable store (a vector index, a search engine, a database).
+- **Reasoning over things** — handled by the model, given only what's relevant right now.
+
+Instead of asking the model to recall a fact, you ask it to read a fact you just handed it. That's a strictly easier task, and it's the reason RAG systems can cite sources, get updated without retraining, and fail in ways you can actually debug.
+
+## The pipeline, stripped to essentials
+
+```
+query → embed → search index → rerank → top-k chunks → prompt → answer
+```
+
+1. **Chunk and embed** your documents ahead of time, storing vectors in an index (FAISS, pgvector, a managed vector DB — the choice matters less than people think).
+2. **Embed the query** the same way, so it lands in the same vector space.
+3. **Search** for the nearest chunks by similarity.
+4. **Rerank** (optional but often decisive) — a cheap similarity search casts a wide net; a heavier cross-encoder reranker narrows it to what's actually relevant.
+5. **Stuff the top-k chunks into the prompt** alongside the query and let the model answer *from* them, not *around* them.
+
+Step 5 is where most naive implementations quietly break: the model isn't told to *only* use the provided context, so it blends retrieved facts with memorized ones and you can no longer tell which is which.
+
+## Where it actually goes wrong
+
+**Chunking is the silent killer.** Split a document by fixed character count and you'll routinely sever a sentence — or a table — right where the answer lives. Chunk boundaries that ignore document structure (headings, paragraphs, code blocks) lose information no reranker can recover, because the information was never retrieved intact in the first place.
+
+**Retrieval and generation fail independently, and they look the same from outside.** A wrong answer can mean the retriever missed the right chunk, or the retriever found it and the model ignored it anyway. Without logging what was actually retrieved for a given query, you're debugging blind — treating a retrieval failure as a prompting problem, or vice versa.
+
+**Similarity isn't relevance.** Embedding similarity finds text that *talks about the same topic*, not text that *answers the question*. "What was our Q3 churn rate?" and "our Q3 churn rate improved due to onboarding changes" embed close together — but so does an unrelated paragraph that happens to mention "Q3" and "rate" a lot. This is exactly what reranking exists to correct, and exactly why skipping it is the most common shortcut that quietly caps quality.
+
+**Stale indices lie confidently.** An LLM without RAG will hedge on things it's unsure of (sometimes). A RAG system fed an out-of-date index will retrieve last quarter's numbers and present them with full source-backed confidence, because from the model's point of view, it *did* check.
+
+## RAG vs. long context: not actually a rivalry
+
+Bigger context windows don't remove the need for retrieval — they change the point at which retrieval happens. Even a model with a million-token window has a finite corpus it's answering from, and dumping the whole corpus into every prompt is slower, more expensive, and — the part demos don't show — makes the model measurably worse at attending to the *right* part of that context. The realistic pattern is retrieval to narrow a large corpus down to a long-context-sized working set, not retrieval versus long context as competing bets.
+
+## The one-sentence version
+
+RAG isn't about giving a model more information — it's about giving it *less*, deliberately, so what it's reasoning over is the same thing you'd point a human researcher at if you wanted a trustworthy, sourced answer.
